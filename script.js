@@ -8,6 +8,7 @@ const formEl = document.querySelector('.form');
 const feedbackListEl = document.querySelector('.feedbacks');
 const submitBtnEl = document.querySelector('.submit-btn');
 const spinnerEl = document.querySelector('.spinner');
+const hashtagListEl = document.querySelector('.hashtags');
 
 const renderFeedbackItem = feedbackItem => {
     // new feedback item HTML
@@ -132,6 +133,37 @@ formEl.addEventListener('submit', submitHandler);
 
 
 // -- FEEDBACK LIST COMPONENT --
+const clickHandler = event => {
+    // get clicked HTML-element
+    const clickedEl = event.target;
+
+    // determine if user intended to upvote or expand
+    const upvoteIntention = clickedEl.className.includes('upvote');
+
+    // run the appropriate logic
+    if (upvoteIntention) {
+        // get the closest upvote button
+        const upvoteBtnEl = clickedEl.closest('.upvote');
+
+        // disable upvote button (prevent double-clicks, spam)
+        upvoteBtnEl.disabled = true;
+
+        // select the upvote count element within the upvote button
+        const upvoteCountEl = upvoteBtnEl.querySelector('.upvote__count');
+
+        // get currently displayed upvote count as number (+)
+        let upvoteCount = +upvoteCountEl.textContent;
+
+        // set upvote count incremented by 1
+        upvoteCountEl.textContent = ++upvoteCount;
+    } else {
+        // expand the clicked feedback item
+        clickedEl.closest('.feedback').classList.toggle('feedback--expand');
+    }
+};
+
+feedbackListEl.addEventListener('click', clickHandler);
+
 fetch(`${BASE_API_URL}/feedbacks`)
     .then(response => response.json())
     .then(data => {
@@ -144,3 +176,32 @@ fetch(`${BASE_API_URL}/feedbacks`)
     .catch(error => {
         feedbackListEl.textContent = `Failed to fetch feedback items. Error message: ${error.message}`;
     });
+
+
+// -- HASHTAG LIST COMPONENT --
+const clickHandler2 = event => {
+    // get the clicked element
+    const clickedEl = event.target;
+
+    // stop function if click happened in list, but outside buttons
+    if (clickedEl.className === 'hashtags') return;
+
+    // extract company name
+    const companyNameFromHashtag = clickedEl.textContent.substring(1).toLowerCase().trim();
+
+    // iterate over each feedback item in the list
+    feedbackListEl.childNodes.forEach(childNode => {
+        // stop this iteration if it's a text node
+        if (childNode.nodeType === 3) return;
+
+        // extract company name
+        const companyNameFromFeedbackItem = childNode.querySelector('.feedback__company').textContent.toLowerCase().trim();
+
+        // remove feedback item from list if company names are not equal
+        if (companyNameFromHashtag !== companyNameFromFeedbackItem) {
+            childNode.remove();
+        }
+    });
+};
+
+hashtagListEl.addEventListener('click', clickHandler2);
